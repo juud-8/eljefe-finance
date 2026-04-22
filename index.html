@@ -149,6 +149,7 @@ tbody tr:last-child td { border-bottom: none; }
     <button class="tb" data-tab="spending" onclick="st('spending')">Spending</button>
     <button class="tb" data-tab="networth" onclick="st('networth')">Net worth</button>
     <button class="tb" data-tab="debt" onclick="st('debt')">Debt</button>
+    <button class="tb" data-tab="cashapp" onclick="st('cashapp')">Cash App</button>
     <button class="tb" data-tab="goals" onclick="st('goals')">Goals</button>
     <button class="tb" data-tab="movein" onclick="st('movein')">Move-in</button>
     <button class="tb" data-tab="bank" onclick="st('bank')">Bank</button>
@@ -283,6 +284,109 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <!-- CASH APP -->
+  <div id="tab-cashapp" class="tc">
+    <div class="kg" id="ca-kpis"></div>
+    <div class="two">
+      <div class="card">
+        <div class="ct">Cash & Bitcoin</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Cash balance</div>
+              <div style="font-size:11px;color:var(--muted2)">In Cash App</div>
+            </div>
+            <input class="ni" type="number" min="0" step="0.01" value="" placeholder="0" id="ca-cash" onchange="upCA('cashBalance',+this.value||0)"/>
+          </div>
+          <div style="height:1px;background:var(--border)"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">BTC amount</div>
+              <div style="font-size:11px;color:var(--muted2)">Bitcoin held</div>
+            </div>
+            <input class="ni" type="number" min="0" step="0.00000001" value="" placeholder="0" id="ca-btc-amt" onchange="upCABtc('amount',+this.value||0)"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+            <div>
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">BTC price (USD)</div>
+              <div style="font-size:11px;color:var(--muted2)">Update manually</div>
+            </div>
+            <input class="ni" type="number" min="0" step="0.01" value="" placeholder="0" id="ca-btc-px" onchange="upCABtc('priceUsd',+this.value||0)"/>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">
+            <span style="font-size:12px;color:var(--muted)">BTC value</span>
+            <span style="font-family:var(--mono);font-size:14px" id="ca-btc-val">$0</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="ct">Cash App Borrow</div>
+        <table>
+          <thead><tr><th>Field</th><th class="r">Value</th></tr></thead>
+          <tbody>
+            <tr><td style="font-size:13px">Balance owed</td><td class="r"><input class="ni" type="number" min="0" step="0.01" id="ca-br-bal" placeholder="0" onchange="upCABorrow('balance',+this.value||0)" style="color:var(--red)"/></td></tr>
+            <tr><td style="font-size:13px">Original amount</td><td class="r"><input class="ni" type="number" min="0" step="0.01" id="ca-br-orig" placeholder="0" onchange="upCABorrow('originalAmount',+this.value||0)"/></td></tr>
+            <tr><td style="font-size:13px">APR %</td><td class="r"><input class="ni" type="number" min="0" step="0.01" id="ca-br-apr" placeholder="0" onchange="upCABorrow('apr',+this.value||0)"/></td></tr>
+            <tr><td style="font-size:13px">Min / mo</td><td class="r"><input class="ni" type="number" min="0" step="0.01" id="ca-br-min" placeholder="0" onchange="upCABorrow('minPayment',+this.value||0)"/></td></tr>
+            <tr><td style="font-size:13px">Due date</td><td class="r"><input class="ni" type="date" id="ca-br-due" onchange="upCABorrow('dueDate',this.value||'')" style="width:140px;text-align:left"/></td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:11px;color:var(--muted2);margin-top:10px" id="ca-br-note"></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">Stocks</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:90px">Ticker</th>
+              <th style="min-width:140px">Name</th>
+              <th class="r" style="min-width:90px">Shares</th>
+              <th class="r" style="min-width:90px">Price</th>
+              <th class="r" style="min-width:100px">Value</th>
+              <th style="width:24px"></th>
+            </tr>
+          </thead>
+          <tbody id="ca-stk-tb"></tbody>
+        </table>
+      </div>
+      <button class="ab" onclick="addCAStock()">+ add stock</button>
+      <p style="font-size:11px;color:var(--muted2);margin-top:8px">Prices are manual. Update when you want an accurate USD value.</p>
+    </div>
+    <div class="card">
+      <div class="ct">Send / receive log</div>
+      <div class="exp-form-row">
+        <div class="exp-fg" style="flex:0 0 140px;min-width:140px">
+          <label for="ca-act-date">Date</label>
+          <input type="date" id="ca-act-date"/>
+        </div>
+        <div class="exp-fg" style="flex:1 1 160px">
+          <label for="ca-act-name">Person / note</label>
+          <input type="text" id="ca-act-name" placeholder="$cashtag or note" autocomplete="off"/>
+        </div>
+        <div class="exp-fg" style="flex:0 0 120px;min-width:120px">
+          <label for="ca-act-dir">Direction</label>
+          <select id="ca-act-dir">
+            <option value="out">Sent</option>
+            <option value="in">Received</option>
+          </select>
+        </div>
+        <div class="exp-fg" style="flex:0 0 110px;min-width:110px">
+          <label for="ca-act-amt">Amount</label>
+          <input class="ni" type="number" min="0" step="0.01" id="ca-act-amt" placeholder="0"/>
+        </div>
+      </div>
+      <div class="exp-actions" style="margin-top:12px">
+        <button type="button" class="primary" onclick="logCAActivity()">Log</button>
+      </div>
+      <div style="overflow-x:auto;margin-top:14px">
+        <table><thead><tr><th>Date</th><th>Note</th><th>Type</th><th class="r">Amount</th><th style="width:24px"></th></tr></thead><tbody id="ca-act-tb"></tbody></table>
+      </div>
+      <p style="font-size:11px;color:var(--muted2);margin-top:8px" id="ca-act-empty"></p>
+    </div>
+  </div>
+
   <!-- GOALS -->
   <div id="tab-goals" class="tc">
     <div id="goals-list"></div>
@@ -397,6 +501,13 @@ const DEF={
     {id:1,name:"Credit card",type:"Credit card",balance:0,apr:0,minPayment:0},
     {id:2,name:"Student loan",type:"Student loan",balance:0,apr:0,minPayment:0},
   ],
+  cashApp:{
+    cashBalance:0,
+    btc:{amount:0,priceUsd:0},
+    borrow:{balance:0,originalAmount:0,apr:0,minPayment:0,dueDate:''},
+    stocks:[],
+    activity:[],
+  },
   goals:[
     {id:1,name:"Emergency fund (3 months expenses)",target:0,current:0},
     {id:2,name:"AgentAce MRR (monthly)",target:10000,current:0},
@@ -550,6 +661,12 @@ function load(){
   if(!Array.isArray(S.expenseLog)) S.expenseLog=[];
   if(!Array.isArray(S.expenseLibrary)) S.expenseLibrary=JSON.parse(JSON.stringify(DEF.expenseLibrary));
   if(!Array.isArray(S.debts)) S.debts=JSON.parse(JSON.stringify(DEF.debts));
+  if(!S.cashApp||typeof S.cashApp!=='object') S.cashApp=JSON.parse(JSON.stringify(DEF.cashApp));
+  if(typeof S.cashApp.cashBalance!=='number') S.cashApp.cashBalance=0;
+  if(!S.cashApp.btc||typeof S.cashApp.btc!=='object') S.cashApp.btc={amount:0,priceUsd:0};
+  if(!S.cashApp.borrow||typeof S.cashApp.borrow!=='object') S.cashApp.borrow={balance:0,originalAmount:0,apr:0,minPayment:0,dueDate:''};
+  if(!Array.isArray(S.cashApp.stocks)) S.cashApp.stocks=[];
+  if(!Array.isArray(S.cashApp.activity)) S.cashApp.activity=[];
   render();
 }
 
@@ -572,7 +689,7 @@ function calc(){
   return{inB,inR,exB,exS,surp:inB-exB,nw:ta-tl,ta,tl,miC,miG:miC-S.moveIn.saved};
 }
 
-function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rDebt();rGoals();rMoveIn(t);rBank();}
+function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rDebt();rCashApp();rGoals();rMoveIn(t);rBank();}
 
 function getExpenseCats(){
   const u=new Set(S.expenses.map(e=>e.cat).filter(Boolean));
@@ -901,6 +1018,100 @@ function rDebt(){
 function upDebt(id,field,val){const d=S.debts.find(x=>x.id===id);if(d)d[field]=val;go();}
 function addDebt(){S.debts.push({id:++nid,name:'New debt',type:'Other',balance:0,apr:0,minPayment:0});go();}
 function delDebt(id){S.debts=S.debts.filter(x=>x.id!==id);go();}
+
+function caTotals(){
+  const c=S.cashApp||{};
+  const cash=+c.cashBalance||0;
+  const btcVal=(+c.btc?.amount||0)*(+c.btc?.priceUsd||0);
+  const stkVal=(c.stocks||[]).reduce((s,x)=>s+((+x.shares||0)*(+x.price||0)),0);
+  const owed=+c.borrow?.balance||0;
+  return{cash,btcVal,stkVal,owed,net:cash+btcVal+stkVal-owed};
+}
+
+function rCashApp(){
+  const c=S.cashApp;if(!c) return;
+  const kpis=document.getElementById('ca-kpis');if(!kpis) return;
+  const t=caTotals();
+  kpis.innerHTML=`
+    <div class="kc"><div class="kl">Cash App net</div><div class="kv" style="color:${t.net>=0?'var(--green)':'var(--red)'}">${$$(t.net)}</div><div class="ks">Assets − Borrow</div></div>
+    <div class="kc"><div class="kl">Cash</div><div class="kv">${$$(t.cash)}</div><div class="ks">Spendable</div></div>
+    <div class="kc"><div class="kl">BTC + Stocks</div><div class="kv" style="color:var(--gold)">${$$(t.btcVal+t.stkVal)}</div><div class="ks">${$$(t.btcVal)} BTC · ${$$(t.stkVal)} stocks</div></div>
+    <div class="kc"><div class="kl">Borrow owed</div><div class="kv" style="color:${t.owed>0?'var(--red)':'var(--text)'}">${$$(t.owed)}</div><div class="ks">Cash App loan</div></div>
+  `;
+  const cash=document.getElementById('ca-cash');if(cash&&document.activeElement!==cash) cash.value=c.cashBalance||'';
+  const bAmt=document.getElementById('ca-btc-amt');if(bAmt&&document.activeElement!==bAmt) bAmt.value=c.btc.amount||'';
+  const bPx=document.getElementById('ca-btc-px');if(bPx&&document.activeElement!==bPx) bPx.value=c.btc.priceUsd||'';
+  const bVal=document.getElementById('ca-btc-val');if(bVal) bVal.textContent=$$(t.btcVal);
+  const br=c.borrow;
+  const setVal=(id,v)=>{const el=document.getElementById(id);if(el&&document.activeElement!==el) el.value=v;};
+  setVal('ca-br-bal',br.balance||'');
+  setVal('ca-br-orig',br.originalAmount||'');
+  setVal('ca-br-apr',br.apr||'');
+  setVal('ca-br-min',br.minPayment||'');
+  setVal('ca-br-due',br.dueDate||'');
+  const note=document.getElementById('ca-br-note');
+  if(note){
+    if((+br.balance||0)>0){
+      const p=debtPayoff(br.balance,br.apr,br.minPayment);
+      note.textContent='Payoff at min payment: '+fmtMonths(p.months)+(isFinite(p.totalInterest)?' · interest '+$$(p.totalInterest):'');
+    }else note.textContent='';
+  }
+  const stb=document.getElementById('ca-stk-tb');
+  if(stb){
+    stb.innerHTML=c.stocks.map(s=>{
+      const v=(+s.shares||0)*(+s.price||0);
+      return`<tr>
+        <td><input class="namei" value="${esc(s.ticker||'')}" placeholder="AAPL" onchange="upCAStock(${s.id},'ticker',this.value.trim().toUpperCase())"/></td>
+        <td><input class="namei" value="${esc(s.name||'')}" placeholder="Name" onchange="upCAStock(${s.id},'name',this.value)"/></td>
+        <td class="r"><input class="ni" type="number" min="0" step="0.0001" value="${s.shares||''}" placeholder="0" onchange="upCAStock(${s.id},'shares',+this.value||0)"/></td>
+        <td class="r"><input class="ni" type="number" min="0" step="0.01" value="${s.price||''}" placeholder="0" onchange="upCAStock(${s.id},'price',+this.value||0)"/></td>
+        <td class="r" style="font-family:var(--mono);font-size:12px;color:var(--gold)">${$$(v)}</td>
+        <td><button class="db" onclick="delCAStock(${s.id})">×</button></td>
+      </tr>`;
+    }).join('');
+  }
+  const today=new Date().toISOString().slice(0,10);
+  const dEl=document.getElementById('ca-act-date');if(dEl&&!dEl.value) dEl.value=today;
+  const atb=document.getElementById('ca-act-tb');
+  const aEmpty=document.getElementById('ca-act-empty');
+  const sorted=[...c.activity].sort((a,b)=>{if(a.date!==b.date)return b.date.localeCompare(a.date);return(b.id||0)-(a.id||0);});
+  if(atb) atb.innerHTML=sorted.map(a=>{
+    const col=a.direction==='in'?'var(--green)':'var(--red)';
+    const sign=a.direction==='in'?'+':'−';
+    const label=a.direction==='in'?'Received':'Sent';
+    return`<tr>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${esc(a.date)}</td>
+      <td>${esc(a.name||'')}</td>
+      <td style="font-size:11px;color:${col}">${label}</td>
+      <td class="r" style="font-family:var(--mono);color:${col}">${sign}${$$(Math.abs(+a.amount||0))}</td>
+      <td><button class="db" onclick="delCAActivity(${a.id})">×</button></td>
+    </tr>`;
+  }).join('');
+  if(aEmpty) aEmpty.textContent=sorted.length?'':'No entries yet — log sends and receives here.';
+}
+
+function upCA(field,val){S.cashApp[field]=val;go();}
+function upCABtc(field,val){S.cashApp.btc[field]=val;go();}
+function upCABorrow(field,val){S.cashApp.borrow[field]=val;go();}
+function addCAStock(){S.cashApp.stocks.push({id:++nid,ticker:'',name:'',shares:0,price:0});go();}
+function upCAStock(id,field,val){const s=S.cashApp.stocks.find(x=>x.id===id);if(s)s[field]=val;go();}
+function delCAStock(id){S.cashApp.stocks=S.cashApp.stocks.filter(x=>x.id!==id);go();}
+function logCAActivity(){
+  const dEl=document.getElementById('ca-act-date');
+  const nEl=document.getElementById('ca-act-name');
+  const dirEl=document.getElementById('ca-act-dir');
+  const amtEl=document.getElementById('ca-act-amt');
+  if(!dEl||!nEl||!dirEl||!amtEl) return;
+  const date=dEl.value||new Date().toISOString().slice(0,10);
+  const name=nEl.value.trim();
+  const direction=dirEl.value==='in'?'in':'out';
+  const amount=+amtEl.value||0;
+  if(amount<=0){alert('Enter a positive amount.');return;}
+  S.cashApp.activity.push({id:++nid,date,name,direction,amount});
+  nEl.value='';amtEl.value='';
+  go();
+}
+function delCAActivity(id){S.cashApp.activity=S.cashApp.activity.filter(x=>x.id!==id);go();}
 
 function rMoveIn(t){
   const days=Math.max(0,Math.round((new Date('2026-05-01')-new Date())/86400000));
