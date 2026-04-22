@@ -1,0 +1,7 @@
+{
+  "name": "eljefe-finance",
+  "private": true,
+  "dependencies": {
+    "plaid": "^30.0.0"
+  }
+}
