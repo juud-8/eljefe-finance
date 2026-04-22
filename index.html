@@ -148,6 +148,7 @@ tbody tr:last-child td { border-bottom: none; }
     <button class="tb" data-tab="budget" onclick="st('budget')">Budget</button>
     <button class="tb" data-tab="spending" onclick="st('spending')">Spending</button>
     <button class="tb" data-tab="networth" onclick="st('networth')">Net worth</button>
+    <button class="tb" data-tab="debt" onclick="st('debt')">Debt</button>
     <button class="tb" data-tab="goals" onclick="st('goals')">Goals</button>
     <button class="tb" data-tab="movein" onclick="st('movein')">Move-in</button>
   </div>
@@ -243,6 +244,44 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
+  <!-- DEBT -->
+  <div id="tab-debt" class="tc">
+    <div class="kg" id="debt-kpis"></div>
+    <div class="card">
+      <div class="ct" style="color:var(--red)">Debts</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th style="min-width:140px">Name</th>
+              <th style="min-width:100px">Type</th>
+              <th class="r" style="min-width:100px">Balance</th>
+              <th class="r" style="min-width:80px">APR %</th>
+              <th class="r" style="min-width:90px">Min / mo</th>
+              <th class="r" style="min-width:110px">Payoff</th>
+              <th style="width:24px"></th>
+            </tr>
+          </thead>
+          <tbody id="debt-tb"></tbody>
+        </table>
+      </div>
+      <button class="ab" onclick="addDebt()">+ add debt</button>
+      <p style="font-size:11px;color:var(--muted2);margin-top:10px">Payoff assumes you pay the minimum each month and the APR stays fixed. If the minimum does not cover monthly interest, it shows “never.”</p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="ct">Snowball order</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Smallest balance first — fast wins.</p>
+        <div id="debt-snowball"></div>
+      </div>
+      <div class="card">
+        <div class="ct">Avalanche order</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Highest APR first — least interest paid.</p>
+        <div id="debt-avalanche"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- GOALS -->
   <div id="tab-goals" class="tc">
     <div id="goals-list"></div>
@@ -313,6 +352,10 @@ const DEF={
     {id:3,name:"Auto loan",amount:0},
     {id:4,name:"Other debt",amount:0},
   ],
+  debts:[
+    {id:1,name:"Credit card",type:"Credit card",balance:0,apr:0,minPayment:0},
+    {id:2,name:"Student loan",type:"Student loan",balance:0,apr:0,minPayment:0},
+  ],
   goals:[
     {id:1,name:"Emergency fund (3 months expenses)",target:0,current:0},
     {id:2,name:"AgentAce MRR (monthly)",target:10000,current:0},
@@ -336,6 +379,7 @@ function load(){
   try{const saved=localStorage.getItem(SK);if(saved){const p=JSON.parse(saved);S={...DEF,...p};}}catch(e){}
   if(!Array.isArray(S.expenseLog)) S.expenseLog=[];
   if(!Array.isArray(S.expenseLibrary)) S.expenseLibrary=JSON.parse(JSON.stringify(DEF.expenseLibrary));
+  if(!Array.isArray(S.debts)) S.debts=JSON.parse(JSON.stringify(DEF.debts));
   render();
 }
 
@@ -358,7 +402,7 @@ function calc(){
   return{inB,inR,exB,exS,surp:inB-exB,nw:ta-tl,ta,tl,miC,miG:miC-S.moveIn.saved};
 }
 
-function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rGoals();rMoveIn(t);}
+function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rDebt();rGoals();rMoveIn(t);}
 
 function getExpenseCats(){
   const u=new Set(S.expenses.map(e=>e.cat).filter(Boolean));
@@ -608,6 +652,85 @@ function rGoals(){
     </div>`;
   }).join('');
 }
+
+const DEBT_TYPES=['Credit card','Student loan','Auto loan','Mortgage','Personal','Medical','Other'];
+
+function debtPayoff(balance,apr,minPayment){
+  const b=+balance||0,a=+apr||0,m=+minPayment||0;
+  if(b<=0) return{months:0,totalInterest:0,never:false};
+  const r=Math.max(a,0)/100/12;
+  const monthlyInterest=b*r;
+  if(m<=0) return{months:Infinity,totalInterest:Infinity,never:true};
+  if(r>0&&m<=monthlyInterest+0.005) return{months:Infinity,totalInterest:Infinity,never:true};
+  let months;
+  if(r===0){months=Math.ceil(b/m);}
+  else{months=Math.ceil(Math.log(m/(m-r*b))/Math.log(1+r));}
+  const totalPaid=months*m;
+  const totalInterest=Math.max(0,totalPaid-b);
+  return{months,totalInterest,never:false};
+}
+
+function fmtMonths(mo){
+  if(!isFinite(mo)) return 'never';
+  if(mo<=0) return '—';
+  const y=Math.floor(mo/12),m=mo%12;
+  if(y<=0) return m+'mo';
+  if(m===0) return y+'y';
+  return y+'y '+m+'mo';
+}
+
+function rDebt(){
+  const tb=document.getElementById('debt-tb');
+  const kpis=document.getElementById('debt-kpis');
+  const snow=document.getElementById('debt-snowball');
+  const aval=document.getElementById('debt-avalanche');
+  if(!tb||!kpis) return;
+  const rows=S.debts.map(d=>({d,p:debtPayoff(d.balance,d.apr,d.minPayment)}));
+  const typeOpts=(sel)=>DEBT_TYPES.map(t=>`<option value="${esc(t)}"${t===sel?' selected':''}>${esc(t)}</option>`).join('');
+  tb.innerHTML=rows.map(({d,p})=>{
+    const bal=+d.balance||0;
+    const col=p.never?'var(--red)':'var(--text)';
+    return`<tr>
+      <td><input class="namei" value="${esc(d.name)}" onchange="upDebt(${d.id},'name',this.value)"/></td>
+      <td><select class="namei" style="background:transparent" onchange="upDebt(${d.id},'type',this.value)">${typeOpts(d.type||'Other')}</select></td>
+      <td class="r"><input class="ni" type="number" min="0" step="0.01" value="${bal||''}" placeholder="0" onchange="upDebt(${d.id},'balance',+this.value||0)" style="color:var(--red)"/></td>
+      <td class="r"><input class="ni" type="number" min="0" step="0.01" value="${d.apr||''}" placeholder="0" onchange="upDebt(${d.id},'apr',+this.value||0)"/></td>
+      <td class="r"><input class="ni" type="number" min="0" step="0.01" value="${d.minPayment||''}" placeholder="0" onchange="upDebt(${d.id},'minPayment',+this.value||0)"/></td>
+      <td class="r" style="font-family:var(--mono);font-size:12px;color:${col}">${bal>0?fmtMonths(p.months):'—'}</td>
+      <td><button class="db" onclick="delDebt(${d.id})">×</button></td>
+    </tr>`;
+  }).join('');
+  const totalBal=S.debts.reduce((s,d)=>s+(+d.balance||0),0);
+  const totalMin=S.debts.reduce((s,d)=>s+(+d.minPayment||0),0);
+  const weightedApr=totalBal>0?S.debts.reduce((s,d)=>s+(+d.balance||0)*(+d.apr||0),0)/totalBal:0;
+  const totalInterestIfMin=rows.reduce((s,{p})=>s+(isFinite(p.totalInterest)?p.totalInterest:0),0);
+  const monthlyInterestNow=S.debts.reduce((s,d)=>s+((+d.balance||0)*((+d.apr||0)/100/12)),0);
+  const anyNever=rows.some(r=>r.p.never&&(+r.d.balance||0)>0);
+  kpis.innerHTML=`
+    <div class="kc"><div class="kl">Total debt</div><div class="kv" style="color:${totalBal>0?'var(--red)':'var(--text)'}">${$$(totalBal)}</div><div class="ks">${S.debts.filter(d=>(+d.balance||0)>0).length} active</div></div>
+    <div class="kc"><div class="kl">Avg APR</div><div class="kv">${weightedApr.toFixed(2)}%</div><div class="ks">Balance-weighted</div></div>
+    <div class="kc"><div class="kl">Min / month</div><div class="kv" style="color:var(--red)">${$$(totalMin)}</div><div class="ks">${$$(monthlyInterestNow)} is interest</div></div>
+    <div class="kc"><div class="kl">Interest to payoff</div><div class="kv" style="color:${anyNever?'var(--red)':'var(--gold)'}">${anyNever?'∞':$$(totalInterestIfMin)}</div><div class="ks">At min payments</div></div>
+  `;
+  const active=rows.filter(r=>(+r.d.balance||0)>0);
+  const orderRow=({d,p})=>`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:13px">${esc(d.name||'(untitled)')}</span>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${$$(+d.balance||0)} · ${(+d.apr||0).toFixed(2)}% · ${fmtMonths(p.months)}</span>
+    </div>`;
+  if(snow){
+    const s=[...active].sort((a,b)=>(+a.d.balance||0)-(+b.d.balance||0));
+    snow.innerHTML=s.length?s.map(orderRow).join(''):'<span style="font-size:12px;color:var(--muted)">Add debts with balances to see order.</span>';
+  }
+  if(aval){
+    const a=[...active].sort((x,y)=>(+y.d.apr||0)-(+x.d.apr||0));
+    aval.innerHTML=a.length?a.map(orderRow).join(''):'<span style="font-size:12px;color:var(--muted)">Add debts with balances to see order.</span>';
+  }
+}
+
+function upDebt(id,field,val){const d=S.debts.find(x=>x.id===id);if(d)d[field]=val;go();}
+function addDebt(){S.debts.push({id:++nid,name:'New debt',type:'Other',balance:0,apr:0,minPayment:0});go();}
+function delDebt(id){S.debts=S.debts.filter(x=>x.id!==id);go();}
 
 function rMoveIn(t){
   const days=Math.max(0,Math.round((new Date('2026-05-01')-new Date())/86400000));
