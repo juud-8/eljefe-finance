@@ -152,6 +152,7 @@ tbody tr:last-child td { border-bottom: none; }
     <button class="tb" data-tab="cashapp" onclick="st('cashapp')">Cash App</button>
     <button class="tb" data-tab="goals" onclick="st('goals')">Goals</button>
     <button class="tb" data-tab="movein" onclick="st('movein')">Move-in</button>
+    <button class="tb" data-tab="bank" onclick="st('bank')">Bank</button>
   </div>
 
   <!-- OVERVIEW -->
@@ -413,6 +414,46 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div>
   </div>
+
+  <!-- BANK (Plaid, solo) -->
+  <div id="tab-bank" class="tc">
+    <div class="card">
+      <div class="ct">PNC & balances (Plaid)</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.5">Read-only link to your bank (including PNC when Plaid supports your login). Works only on the deployed URL or <span style="font-family:var(--mono)">vercel dev</span> — not when opening this file as <span style="font-family:var(--mono)">file://</span>.</p>
+      <div class="exp-form-row" style="margin-bottom:10px">
+        <div class="exp-fg" style="flex:1 1 220px">
+          <label for="bank-secret">Solo passphrase</label>
+          <input type="password" id="bank-secret" placeholder="Same as FINANCE_SOLO_SECRET on the server" autocomplete="current-password"/>
+        </div>
+        <div class="exp-fg" style="flex:0 0 auto;align-self:flex-end">
+          <label>&nbsp;</label>
+          <div class="exp-actions" style="margin:0">
+            <button type="button" class="primary" onclick="saveBankSecret()">Save in this browser</button>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--muted2);margin-bottom:14px" id="bank-secret-hint"></p>
+      <div class="exp-actions" style="margin-bottom:8px">
+        <button type="button" class="primary" onclick="openPlaidLink()">Connect bank</button>
+        <button type="button" onclick="refreshBankData()">Refresh data</button>
+        <button type="button" onclick="disconnectBank()" style="border-color:var(--red);color:var(--red)">Disconnect</button>
+      </div>
+      <p style="font-size:12px;color:var(--muted)" id="bank-status"></p>
+    </div>
+    <div class="two">
+      <div class="card">
+        <div class="ct">Accounts & balances</div>
+        <div id="bank-accts"></div>
+      </div>
+      <div class="card">
+        <div class="ct">Recent transactions</div>
+        <div style="overflow-x:auto">
+          <table><thead><tr><th>Date</th><th>Description</th><th>Cat.</th><th class="r">Amt</th></tr></thead><tbody id="bank-tx"></tbody></table>
+        </div>
+        <p style="font-size:11px;color:var(--muted2);margin-top:8px" id="bank-tx-note"></p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -486,6 +527,135 @@ const DEF={
 let S=JSON.parse(JSON.stringify(DEF));
 let expFormPrefill=null;
 
+const BANK_SK='ej_bank_solo';
+function bankHdr(){
+  const t=sessionStorage.getItem(BANK_SK)||'';
+  return{'Content-Type':'application/json',Authorization:t?'Bearer '+t:''};
+}
+function saveBankSecret(){
+  const el=document.getElementById('bank-secret');
+  const v=(el&&el.value||'').trim();
+  if(!v){alert('Enter the same passphrase you set as FINANCE_SOLO_SECRET on the server.');return;}
+  sessionStorage.setItem(BANK_SK,v);
+  if(el) el.value='';
+  rBank();
+}
+function loadPlaidSdk(){
+  return new Promise((resolve,reject)=>{
+    if(window.Plaid) return resolve();
+    const s=document.createElement('script');
+    s.src='https://cdn.plaid.com/link/v2/stable/link-initialize.js';
+    s.onload=()=>resolve();
+    s.onerror=()=>reject(new Error('Could not load Plaid'));
+    document.head.appendChild(s);
+  });
+}
+async function openPlaidLink(){
+  const hint=document.getElementById('bank-status');
+  if(!sessionStorage.getItem(BANK_SK)){alert('Save your solo passphrase first.');return;}
+  try{
+    if(hint) hint.textContent='Opening Plaid…';
+    await loadPlaidSdk();
+    const r=await fetch('/api/plaid/link-token',{method:'POST',headers:bankHdr(),credentials:'include'});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok) throw new Error(j.message||j.error||r.statusText);
+    const link_token=j.link_token;
+    if(!link_token) throw new Error('No link_token');
+    const handler=window.Plaid.create({
+      token:link_token,
+      onSuccess:async(public_token)=>{
+        try{
+          const ex=await fetch('/api/plaid/exchange',{method:'POST',headers:bankHdr(),credentials:'include',body:JSON.stringify({public_token})});
+          const ej=await ex.json().catch(()=>({}));
+          if(!ex.ok) throw new Error(bankErr(ej)||ex.statusText);
+          if(hint) hint.textContent='Linked. Refreshing…';
+          await refreshBankData();
+        }catch(e){alert(e.message||String(e));if(hint) hint.textContent='';}
+      },
+      onExit:(err)=>{if(hint) hint.textContent=err&&err.display_message?String(err.display_message):'';},
+    });
+    handler.open();
+    if(hint) hint.textContent='';
+  }catch(e){alert(e.message||String(e));if(hint) hint.textContent='';}
+}
+function bankErr(j){
+  if(!j||typeof j!=='object') return '';
+  const d=j.detail;
+  if(typeof d==='string') return d;
+  if(d&&typeof d==='object') return d.error_message||d.error_code||JSON.stringify(d);
+  return j.message||j.error||'';
+}
+async function refreshBankData(){
+  const st=document.getElementById('bank-status');
+  const ac=document.getElementById('bank-accts');
+  const tb=document.getElementById('bank-tx');
+  const note=document.getElementById('bank-tx-note');
+  if(!sessionStorage.getItem(BANK_SK)){if(st) st.textContent='Save your solo passphrase to load data.';return;}
+  if(st) st.textContent='Loading…';
+  try{
+    const[ra,rt]=await Promise.all([
+      fetch('/api/plaid/accounts',{headers:bankHdr(),credentials:'include'}),
+      fetch('/api/plaid/transactions',{headers:bankHdr(),credentials:'include'}),
+    ]);
+    const ja=await ra.json().catch(()=>({}));
+    const jt=await rt.json().catch(()=>({}));
+    if(!ra.ok){
+      if(ja.error==='not_linked'){
+        if(ac) ac.innerHTML='<span style="font-size:12px;color:var(--muted)">Connect a bank to see accounts.</span>';
+        if(tb) tb.innerHTML='';
+        if(note) note.textContent='';
+        if(st) st.textContent='';
+        return;
+      }
+      throw new Error(bankErr(ja)||ra.statusText);
+    }
+    if(!rt.ok){
+      if(jt.error==='not_linked'){
+        if(tb) tb.innerHTML='';
+        if(note) note.textContent='';
+      }else throw new Error(bankErr(jt)||rt.statusText);
+    }
+    const accs=ja.accounts||[];
+    if(ac) ac.innerHTML=accs.length?accs.map(a=>{
+      const cur=a.balances&&a.balances.current!=null?a.balances.current:(a.balances&&a.balances.available);
+      const line=cur!=null?$$(cur):'—';
+      const sub=[a.type,a.subtype].filter(Boolean).join(' · ');
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-weight:500">${esc(a.name||'Account')}${a.mask?' · '+esc(a.mask):''}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(sub)}</div>
+        <div style="font-family:var(--mono);font-size:16px;margin-top:4px">${line}</div>
+      </div>`;
+    }).join(''):'';
+    if(ac&&!accs.length) ac.innerHTML='<span style="font-size:12px;color:var(--muted)">No accounts yet.</span>';
+    const txs=jt.transactions||[];
+    if(tb) tb.innerHTML=txs.length?txs.map(t=>{
+      const label=esc(t.merchant_name||t.name||'');
+      const cat=esc(t.category||'');
+      const inv=-(+t.amount||0);
+      const col=inv>=0?'var(--green)':'var(--red)';
+      return`<tr><td style="font-family:var(--mono);font-size:12px;color:var(--muted)">${esc(t.date)}</td><td>${label}</td><td style="font-size:11px;color:var(--muted)">${cat}</td><td class="r" style="font-family:var(--mono);color:${col}">${$$(inv)}</td></tr>`;
+    }).join(''):'';
+    if(note) note.textContent=txs.length?('Plaid convention inverted for display (green = in, red = out). Showing up to '+txs.length+' rows.'):'';
+    if(st) st.textContent='';
+  }catch(e){
+    if(st) st.textContent=e.message||String(e);
+    if(ac) ac.innerHTML='';
+    if(tb) tb.innerHTML='';
+  }
+}
+async function disconnectBank(){
+  if(!confirm('Remove bank link from Plaid for this browser session?'))return;
+  try{
+    const r=await fetch('/api/plaid/disconnect',{method:'POST',headers:bankHdr(),credentials:'include'});
+    await r.json().catch(()=>({}));
+    await refreshBankData();
+  }catch(e){alert(e.message||String(e));}
+}
+function rBank(){
+  const hint=document.getElementById('bank-secret-hint');
+  if(hint) hint.textContent=sessionStorage.getItem(BANK_SK)?'Passphrase saved for this tab session.':'Enter the server passphrase once, then Save.';
+}
+
 function load(){
   try{const saved=localStorage.getItem(SK);if(saved){const p=JSON.parse(saved);S={...DEF,...p};}}catch(e){}
   if(!Array.isArray(S.expenseLog)) S.expenseLog=[];
@@ -519,7 +689,7 @@ function calc(){
   return{inB,inR,exB,exS,surp:inB-exB,nw:ta-tl,ta,tl,miC,miG:miC-S.moveIn.saved};
 }
 
-function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rDebt();rCashApp();rGoals();rMoveIn(t);}
+function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t);rDebt();rCashApp();rGoals();rMoveIn(t);rBank();}
 
 function getExpenseCats(){
   const u=new Set(S.expenses.map(e=>e.cat).filter(Boolean));
@@ -1012,6 +1182,7 @@ function st(name){
   document.querySelectorAll('.tb').forEach(e=>e.classList.remove('on'));
   document.getElementById('tab-'+name).classList.add('on');
   document.querySelector(`.tb[data-tab="${name}"]`).classList.add('on');
+  if(name==='bank') refreshBankData();
 }
 
 load();
