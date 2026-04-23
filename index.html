@@ -134,6 +134,9 @@ tbody tr:last-child td { border-bottom: none; }
 .exp-actions button:hover { background: var(--card); }
 .exp-sum { font-size: 13px; color: var(--muted); margin-top: 10px; }
 .exp-sum strong { font-family: var(--mono); color: var(--text); }
+
+.alert-banner { background: var(--red-dim); border: 1px solid var(--red); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: var(--red); }
+.info-banner { background: var(--gold-dim); border: 1px solid var(--gold); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: var(--gold); }
 </style>
 </head>
 <body>
@@ -166,6 +169,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- BUDGET -->
   <div id="tab-budget" class="tc">
+    <div class="info-banner">⚡ Rent, car insurance, phone & student loan payment amounts still need to be filled in (marked $0).</div>
     <div class="card">
       <div class="ct" style="color:var(--green)">↑ Income</div>
       <table><thead><tr><th style="width:46%">Source</th><th class="r">Expected</th><th class="r">Received</th><th style="width:24px"></th></tr></thead><tbody id="inc-tb"></tbody></table>
@@ -182,7 +186,7 @@ tbody tr:last-child td { border-bottom: none; }
     </div>
   </div>
 
-  <!-- SPENDING: log + library -->
+  <!-- SPENDING -->
   <div id="tab-spending" class="tc">
     <div class="card">
       <div class="ct">Expense library</div>
@@ -225,6 +229,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- NET WORTH -->
   <div id="tab-networth" class="tc">
+    <div class="alert-banner">⚠️ Net worth is negative ~$85K — primarily $80K+ in student loans. This is the baseline to beat.</div>
     <div class="nwb">
       <div style="font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px">Net worth</div>
       <div style="font-size:34px;font-weight:700;font-family:var(--mono)" id="nwv">$0</div>
@@ -247,6 +252,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- DEBT -->
   <div id="tab-debt" class="tc">
+    <div class="alert-banner">🔴 Two open collections ($978 total) — Portfolio Recovery & AAS. Settle these FIRST for fastest credit score gain. APRs marked 0% are unknown — update when you have them.</div>
     <div class="kg" id="debt-kpis"></div>
     <div class="card">
       <div class="ct" style="color:var(--red)">Debts</div>
@@ -267,17 +273,17 @@ tbody tr:last-child td { border-bottom: none; }
         </table>
       </div>
       <button class="ab" onclick="addDebt()">+ add debt</button>
-      <p style="font-size:11px;color:var(--muted2);margin-top:10px">Payoff assumes you pay the minimum each month and the APR stays fixed. If the minimum does not cover monthly interest, it shows “never.”</p>
+      <p style="font-size:11px;color:var(--muted2);margin-top:10px">Payoff assumes minimum payment each month at fixed APR. "Never" = min payment ≤ monthly interest accrual.</p>
     </div>
     <div class="two">
       <div class="card">
         <div class="ct">Snowball order</div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Smallest balance first — fast wins.</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Smallest balance first — fast psychological wins.</p>
         <div id="debt-snowball"></div>
       </div>
       <div class="card">
         <div class="ct">Avalanche order</div>
-        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Highest APR first — least interest paid.</p>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px">Highest APR first — mathematically optimal.</p>
         <div id="debt-avalanche"></div>
       </div>
     </div>
@@ -285,6 +291,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- CASH APP -->
   <div id="tab-cashapp" class="tc">
+    <div class="info-banner">💡 $300/paycheck ($600/mo) deposits here. Update the cash balance to track what's actually in the account vs. being spent.</div>
     <div class="kg" id="ca-kpis"></div>
     <div class="two">
       <div class="card">
@@ -351,7 +358,7 @@ tbody tr:last-child td { border-bottom: none; }
         </table>
       </div>
       <button class="ab" onclick="addCAStock()">+ add stock</button>
-      <p style="font-size:11px;color:var(--muted2);margin-top:8px">Prices are manual. Update when you want an accurate USD value.</p>
+      <p style="font-size:11px;color:var(--muted2);margin-top:8px">Prices are manual — update when you want an accurate USD value.</p>
     </div>
     <div class="card">
       <div class="ct">Send / receive log</div>
@@ -416,50 +423,96 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
-const SK='eljefe-fin-v3';
+// v4 = pre-loaded with Jeff's real data from documents (Apr 2026)
+const SK='eljefe-fin-v4';
 const $$=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
 const pc=(a,b)=>b>0?Math.min(100,Math.round(a/b*100)):0;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 let nid=200;
 
+// ─── REAL DATA AS OF APRIL 2026 ───────────────────────────────────────────────
+// Income: bi-weekly net $1,998.75 × 26 ÷ 12 = ~$4,331/mo
+// Split: PNC $1,598.75 · Cash App $300 · Perpay $125 (payroll deduction, updated Apr 23)
+// Sources: pay stub 03/05/2026 (Millcraft Investments / Piatt Sotheby's)
+// ──────────────────────────────────────────────────────────────────────────────
 const DEF={
   income:[
-    {id:1,name:"Sotheby's salary (net)",budgeted:0,received:0},
-    {id:2,name:"AgentAce / consulting",budgeted:0,received:0},
-    {id:3,name:"AI LooksMaxx / apps",budgeted:0,received:0},
-    {id:4,name:"Other income",budgeted:0,received:0},
+    {id:1,  name:"Sotheby's salary (monthly net)",    budgeted:4331, received:0},
+    {id:2,  name:"AgentAce / consulting",              budgeted:0,    received:0},
+    {id:3,  name:"AI LooksMaxx Pro (app)",             budgeted:0,    received:0},
+    {id:4,  name:"Other income",                       budgeted:0,    received:0},
   ],
+
+  // Known fixed payments pre-filled; variable/unknown items at $0
   expenses:[
-    {id:1,name:"Rent",cat:"Housing",budgeted:0,spent:0},
-    {id:2,name:"Utilities",cat:"Housing",budgeted:0,spent:0},
-    {id:3,name:"Internet",cat:"Housing",budgeted:0,spent:0},
-    {id:4,name:"Groceries",cat:"Food",budgeted:0,spent:0},
-    {id:5,name:"Dining out",cat:"Food",budgeted:0,spent:0},
-    {id:6,name:"Phone",cat:"Bills",budgeted:0,spent:0},
-    {id:7,name:"Subscriptions",cat:"Bills",budgeted:0,spent:0},
-    {id:8,name:"Gas / transport",cat:"Transport",budgeted:0,spent:0},
-    {id:9,name:"Gym / boxing",cat:"Health",budgeted:0,spent:0},
-    {id:10,name:"Business tools",cat:"Business",budgeted:0,spent:0},
-    {id:11,name:"Entertainment",cat:"Lifestyle",budgeted:0,spent:0},
-    {id:12,name:"Savings transfer",cat:"Savings",budgeted:0,spent:0},
+    // ── Housing ──────────────────────────────────────────────────────
+    {id:1,  name:"Rent  ← fill in",               cat:"Housing",   budgeted:0,   spent:0},
+    {id:2,  name:"Utilities / Internet",           cat:"Housing",   budgeted:0,   spent:0},
+    // ── Food ─────────────────────────────────────────────────────────
+    {id:3,  name:"Groceries",                      cat:"Food",      budgeted:0,   spent:0},
+    {id:4,  name:"Dining out",                     cat:"Food",      budgeted:0,   spent:0},
+    // ── Bills ────────────────────────────────────────────────────────
+    {id:5,  name:"Phone",                          cat:"Bills",     budgeted:0,   spent:0},
+    {id:6,  name:"Subscriptions",                  cat:"Bills",     budgeted:0,   spent:0},
+    // ── Transport ────────────────────────────────────────────────────
+    {id:7,  name:"Gas",                            cat:"Transport", budgeted:0,   spent:0},
+    {id:8,  name:"Car insurance (Progressive) ← fill in", cat:"Transport", budgeted:0, spent:0},
+    // ── Business ─────────────────────────────────────────────────────
+    {id:9,  name:"Business tools (AgentAce)",      cat:"Business",  budgeted:0,   spent:0},
+    // ── Lifestyle ────────────────────────────────────────────────────
+    {id:10, name:"Entertainment / misc",           cat:"Lifestyle", budgeted:0,   spent:0},
+    // ── Savings ──────────────────────────────────────────────────────
+    {id:11, name:"Emergency fund contribution",    cat:"Savings",   budgeted:0,   spent:0},
+    // ── Debt service (confirmed from statements) ──────────────────────
+    {id:12, name:"Hughes FCU auto loan",           cat:"Debt",      budgeted:251, spent:0},
+    {id:13, name:"Perpay CC (payroll deduction)",  cat:"Debt",      budgeted:250, spent:0},
+    {id:14, name:"Avant personal loan",            cat:"Debt",      budgeted:129, spent:0},
+    {id:15, name:"Upstart loan",                   cat:"Debt",      budgeted:159, spent:0},
+    {id:16, name:"SD6491589 (0% installment)",     cat:"Debt",      budgeted:160, spent:0},
+    {id:17, name:"Capital One minimum",            cat:"Debt",      budgeted:25,  spent:0},
+    {id:18, name:"Student loans (Aidvantage) ← fill in", cat:"Debt", budgeted:0, spent:0},
   ],
+
+  // Assets: per docs (Apr 2026)
   assets:[
-    {id:1,name:"Checking account",amount:0},
-    {id:2,name:"Savings account",amount:0},
-    {id:3,name:"Investments",amount:0},
-    {id:4,name:"Crypto",amount:0},
-    {id:5,name:"Other assets",amount:0},
+    {id:1, name:"PNC Checking (x1167) — as of Feb 10",   amount:927},
+    {id:2, name:"Cash App balance — update manually",     amount:0},
+    {id:3, name:"Fidelity Individual (6 shares BK)",      amount:876},
+    {id:4, name:"Fidelity Rollover IRA",                  amount:61},
+    {id:5, name:"2016 Jeep Renegade (KBB est.)",          amount:13000},
   ],
+
+  // Liabilities: per credit report + statements (Apr 2026)
   liabilities:[
-    {id:1,name:"Credit cards",amount:0},
-    {id:2,name:"Student loans",amount:0},
-    {id:3,name:"Auto loan",amount:0},
-    {id:4,name:"Other debt",amount:0},
+    {id:1,  name:"DEPTEDNELNET (student loans)",          amount:46882},
+    {id:2,  name:"Aidvantage Parent PLUS #1-01",          amount:16798},
+    {id:3,  name:"Aidvantage Parent PLUS #1-02",          amount:16485},
+    {id:4,  name:"Hughes FCU auto (Jeep)",                amount:8986},
+    {id:5,  name:"Avant personal loan",                   amount:3277},
+    {id:6,  name:"Upstart loan",                          amount:2399},
+    {id:7,  name:"SD6491589 (0% installment)",            amount:2240},
+    {id:8,  name:"Perpay CC (27.74% APR)",                amount:1646},
+    {id:9,  name:"Capital One CC",                        amount:263},
+    {id:10, name:"Portfolio Recovery (collection)",       amount:705},
+    {id:11, name:"AAS Debt Recovery (collection)",        amount:273},
   ],
+
+  // Debt tracker — pre-loaded with all confirmed accounts
+  // APRs marked 0 = unknown; update when you have them
   debts:[
-    {id:1,name:"Credit card",type:"Credit card",balance:0,apr:0,minPayment:0},
-    {id:2,name:"Student loan",type:"Student loan",balance:0,apr:0,minPayment:0},
+    {id:1,  name:"DEPTEDNELNET (student)",        type:"Student loan", balance:46882, apr:0,     minPayment:0},
+    {id:2,  name:"Aidvantage #1-01 (Parent PLUS)",type:"Student loan", balance:16798, apr:6.84,  minPayment:0},
+    {id:3,  name:"Aidvantage #1-02 (Parent PLUS)",type:"Student loan", balance:16485, apr:6.84,  minPayment:0},
+    {id:4,  name:"Hughes FCU (Jeep — pays off May 2026)", type:"Auto loan", balance:8986, apr:5.95, minPayment:251},
+    {id:5,  name:"Avant personal loan",           type:"Personal",     balance:3277,  apr:0,     minPayment:129},
+    {id:6,  name:"Upstart loan",                  type:"Personal",     balance:2399,  apr:0,     minPayment:159},
+    {id:7,  name:"SD6491589 (0% installment)",    type:"Personal",     balance:2240,  apr:0,     minPayment:160},
+    {id:8,  name:"Perpay CC",                     type:"Credit card",  balance:1646,  apr:27.74, minPayment:66},
+    {id:9,  name:"Capital One CC",                type:"Credit card",  balance:263,   apr:0,     minPayment:25},
+    {id:10, name:"Portfolio Recovery (collection — SETTLE NOW)", type:"Other", balance:705, apr:0, minPayment:0},
+    {id:11, name:"AAS Debt Recovery (collection — SETTLE NOW)",  type:"Other", balance:273, apr:0, minPayment:0},
   ],
+
   cashApp:{
     cashBalance:0,
     btc:{amount:0,priceUsd:0},
@@ -467,19 +520,28 @@ const DEF={
     stocks:[],
     activity:[],
   },
+
+  // Goals: freedom number + immediate priorities
   goals:[
-    {id:1,name:"Emergency fund (3 months expenses)",target:0,current:0},
-    {id:2,name:"AgentAce MRR (monthly)",target:10000,current:0},
-    {id:3,name:"Move-in fund",target:0,current:0},
+    {id:1, name:"AgentAce MRR ($10K × 2 mo. = leave job)", target:10000, current:0},
+    {id:2, name:"Settle collections (Portfolio Recovery + AAS)", target:978, current:0},
+    {id:3, name:"Pay off Perpay CC",                         target:1646, current:0},
+    {id:4, name:"Emergency fund (3 months expenses)",        target:9000, current:0},
+    {id:5, name:"Move-in fund",                              target:0,    current:0},
   ],
+
+  // Move-in: May 1 target — fill in actuals
   moveIn:{securityDeposit:0,firstMonthRent:0,lastMonthRent:0,movingCosts:0,furniture:0,kitchenSetup:0,misc:0,saved:0},
+
   expenseLog:[],
   expenseLibrary:[
-    {id:9001,name:'Coffee / cafe',cat:'Food',amount:0},
-    {id:9002,name:'Uber / Lyft',cat:'Transport',amount:0},
-    {id:9003,name:'Groceries',cat:'Food',amount:0},
-    {id:9004,name:'Dining out',cat:'Food',amount:0},
-    {id:9005,name:'Subscription',cat:'Bills',amount:0},
+    {id:9001,name:'Coffee / cafe',    cat:'Food',      amount:0},
+    {id:9002,name:'Uber / Lyft',      cat:'Transport', amount:0},
+    {id:9003,name:'Groceries',        cat:'Food',      amount:0},
+    {id:9004,name:'Dining out',       cat:'Food',      amount:0},
+    {id:9005,name:'Subscription',     cat:'Bills',     amount:0},
+    {id:9006,name:'Gas station',      cat:'Transport', amount:0},
+    {id:9007,name:'Coinbase purchase',cat:'Business',  amount:0},
   ],
 };
 
@@ -523,7 +585,7 @@ function render(){const t=calc();rOverview(t);rBudget(t);rExpenses();rNetWorth(t
 
 function getExpenseCats(){
   const u=new Set(S.expenses.map(e=>e.cat).filter(Boolean));
-  ['Bills','Business','Food','Health','Housing','Lifestyle','Other','Savings','Transport'].forEach(c=>u.add(c));
+  ['Bills','Business','Debt','Food','Health','Housing','Lifestyle','Other','Savings','Transport'].forEach(c=>u.add(c));
   return[...u].sort((a,b)=>a.localeCompare(b));
 }
 
@@ -556,7 +618,7 @@ function rExpenses(){
   if(libEl){
     if(!S.expenseLibrary.length){
       libEl.innerHTML='';
-      if(libEmpty) libEmpty.textContent='No templates yet — fill the form below and use “Save to library”.';
+      if(libEmpty) libEmpty.textContent='No templates yet.';
     }else{
       if(libEmpty) libEmpty.textContent='';
       libEl.innerHTML=S.expenseLibrary.map(t=>`
@@ -583,7 +645,7 @@ function rExpenses(){
       </tr>
     `).join('');
   }
-  if(logEmpty) logEmpty.textContent=sorted.length?'':'No entries yet — log purchases here without touching your monthly budget sheet.';
+  if(logEmpty) logEmpty.textContent=sorted.length?'':'No entries yet.';
 }
 
 function logExpense(){
@@ -599,8 +661,7 @@ function logExpense(){
   if(!name){alert('Add a short description.');return;}
   if(amount<=0){alert('Enter a positive amount.');return;}
   S.expenseLog.push({id:++nid,date,name,cat,amount});
-  nameEl.value='';
-  amtEl.value='';
+  nameEl.value='';amtEl.value='';
   go();
 }
 
@@ -612,7 +673,7 @@ function saveExpenseToLibrary(){
   const name=nameEl.value.trim();
   const cat=catEl.value||'Other';
   const amount=+amtEl.value||0;
-  if(!name){alert('Add a description to save as a library shortcut.');return;}
+  if(!name){alert('Add a description first.');return;}
   S.expenseLibrary.push({id:++nid,name,cat,amount:amount>0?amount:0});
   go();
 }
@@ -634,7 +695,7 @@ function rOverview(t){
     <div class="kc">
       <div class="kl">Net worth</div>
       <div class="kv" style="color:${t.nw>=0?'var(--green)':'var(--red)'}">${$$(t.nw)}</div>
-      <div class="ks">${$$(t.ta)} assets</div>
+      <div class="ks">${$$(t.ta)} assets · ${$$(t.tl)} debt</div>
     </div>
     <div class="kc">
       <div class="kl">Monthly surplus</div>
@@ -654,8 +715,8 @@ function rOverview(t){
   `;
   const mx=Math.max(t.inB,t.exB,1);
   document.getElementById('cfbars').innerHTML=[
-    {l:'Income',v:t.inB,c:'var(--green)'},
-    {l:'Expenses',v:t.exB,c:'var(--red)'},
+    {l:'Income', v:t.inB,          c:'var(--green)'},
+    {l:'Expenses',v:t.exB,         c:'var(--red)'},
     {l:t.surp>=0?'Surplus':'Deficit',v:Math.abs(t.surp),c:t.surp>=0?'var(--gold)':'var(--red)'},
   ].map(b=>`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
@@ -672,14 +733,14 @@ function rOverview(t){
       <span style="font-size:12px;color:var(--text)">${esc(e.name)}</span>
       <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${$$(e.budgeted)}</span>
     </div>
-  `).join(''):'<span style="font-size:12px;color:var(--muted)">Enter budget to see breakdown</span>';
+  `).join(''):'<span style="font-size:12px;color:var(--muted)">Fill in the budget to see breakdown</span>';
   const ag=S.goals.find(g=>g.name.toLowerCase().includes('agentace'));
   const mrr=ag?ag.current:0;
   document.getElementById('accbar').innerHTML=`
     <div class="acc-bar">
       <div>
         <div style="font-size:10px;font-weight:500;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px">El Jefé rule</div>
-        <div style="font-size:12px;color:var(--muted)">No new projects until $10K MRR × 2 consecutive months</div>
+        <div style="font-size:12px;color:var(--muted)">$10K MRR × 2 consecutive months → leave the day job</div>
       </div>
       <div style="text-align:right;flex-shrink:0;margin-left:12px">
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Current MRR</div>
@@ -832,8 +893,8 @@ function rDebt(){
   const active=rows.filter(r=>(+r.d.balance||0)>0);
   const orderRow=({d,p})=>`
     <div style="display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:13px">${esc(d.name||'(untitled)')}</span>
-      <span style="font-family:var(--mono);font-size:12px;color:var(--muted)">${$$(+d.balance||0)} · ${(+d.apr||0).toFixed(2)}% · ${fmtMonths(p.months)}</span>
+      <span style="font-size:12px">${esc(d.name||'(untitled)')}</span>
+      <span style="font-family:var(--mono);font-size:11px;color:var(--muted)">${$$(+d.balance||0)} · ${(+d.apr||0).toFixed(2)}% · ${fmtMonths(p.months)}</span>
     </div>`;
   if(snow){
     const s=[...active].sort((a,b)=>(+a.d.balance||0)-(+b.d.balance||0));
@@ -917,7 +978,7 @@ function rCashApp(){
       <td><button class="db" onclick="delCAActivity(${a.id})">×</button></td>
     </tr>`;
   }).join('');
-  if(aEmpty) aEmpty.textContent=sorted.length?'':'No entries yet — log sends and receives here.';
+  if(aEmpty) aEmpty.textContent=sorted.length?'':'No entries yet.';
 }
 
 function upCA(field,val){S.cashApp[field]=val;go();}
@@ -948,13 +1009,13 @@ function rMoveIn(t){
   const dEl=document.getElementById('dct');if(dEl)dEl.textContent=days;
   const fields=[
     {k:'securityDeposit',l:'Security deposit'},
-    {k:'firstMonthRent',l:'First month rent'},
-    {k:'lastMonthRent',l:'Last month rent'},
-    {k:'movingCosts',l:'Moving costs'},
-    {k:'furniture',l:'Furniture'},
-    {k:'kitchenSetup',l:'Kitchen setup'},
-    {k:'misc',l:'Miscellaneous'},
-    {k:'saved',l:'Already saved',green:true},
+    {k:'firstMonthRent',  l:'First month rent'},
+    {k:'lastMonthRent',   l:'Last month rent'},
+    {k:'movingCosts',     l:'Moving costs'},
+    {k:'furniture',       l:'Furniture'},
+    {k:'kitchenSetup',    l:'Kitchen setup'},
+    {k:'misc',            l:'Miscellaneous'},
+    {k:'saved',           l:'Already saved', green:true},
   ];
   document.getElementById('mi-items').innerHTML=`
     <table><thead><tr><th>Item</th><th class="r">Amount</th></tr></thead>
@@ -972,10 +1033,10 @@ function rMoveIn(t){
   const mpc=mp>=100?'var(--green)':mp>=50?'var(--gold)':'var(--blue)';
   document.getElementById('mi-status').innerHTML=`
     ${[
-      {l:'Total cost',v:$$(t.miC),ok:t.miC>0},
-      {l:'Saved',v:$$(S.moveIn.saved),ok:S.moveIn.saved>0},
-      {l:'Gap',v:t.miG<=0?'✓ Covered':$$(t.miG),ok:t.miG<=0},
-      {l:'Days left',v:days+' days',ok:days>7},
+      {l:'Total cost',  v:$$(t.miC),                ok:t.miC>0},
+      {l:'Saved',       v:$$(S.moveIn.saved),        ok:S.moveIn.saved>0},
+      {l:'Gap',         v:t.miG<=0?'✓ Covered':$$(t.miG), ok:t.miG<=0},
+      {l:'Days left',   v:days+' days',              ok:days>7},
     ].map(r=>`
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:12px;color:var(--muted)">${r.l}</span>
@@ -996,10 +1057,10 @@ function upMI(k,v){S.moveIn[k]=v;go();}
 
 function addRow(sec){
   const id=++nid;
-  if(sec==='income')S.income.push({id,name:'New source',budgeted:0,received:0});
-  else if(sec==='expenses')S.expenses.push({id,name:'New expense',cat:'Other',budgeted:0,spent:0});
-  else if(sec==='assets')S.assets.push({id,name:'New asset',amount:0});
-  else if(sec==='liabilities')S.liabilities.push({id,name:'New liability',amount:0});
+  if(sec==='income')     S.income.push({id,name:'New source',budgeted:0,received:0});
+  else if(sec==='expenses') S.expenses.push({id,name:'New expense',cat:'Other',budgeted:0,spent:0});
+  else if(sec==='assets')   S.assets.push({id,name:'New asset',amount:0});
+  else if(sec==='liabilities') S.liabilities.push({id,name:'New liability',amount:0});
   go();
 }
 function delRow(sec,id){S[sec]=S[sec].filter(i=>i.id!==id);go();}
