@@ -169,7 +169,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- BUDGET -->
   <div id="tab-budget" class="tc">
-    <div class="info-banner">⚡ Rent, car insurance, phone & student loan payment amounts still need to be filled in (marked $0).</div>
+    <div class="info-banner">⚡ Still needed: phone bill, utilities, groceries budget, Upstart APR, SD6491589 lender identity, Capital One APR. <strong>401k at Millcraft — NOT enrolled. Enroll immediately to capture any employer match.</strong></div>
     <div class="card">
       <div class="ct" style="color:var(--green)">↑ Income</div>
       <table><thead><tr><th style="width:46%">Source</th><th class="r">Expected</th><th class="r">Received</th><th style="width:24px"></th></tr></thead><tbody id="inc-tb"></tbody></table>
@@ -252,7 +252,7 @@ tbody tr:last-child td { border-bottom: none; }
 
   <!-- DEBT -->
   <div id="tab-debt" class="tc">
-    <div class="alert-banner">🔴 Two open collections ($978 total) — Portfolio Recovery & AAS. Settle these FIRST for fastest credit score gain. APRs marked 0% are unknown — update when you have them.</div>
+    <div class="alert-banner">🔴 Two open collections ($978) — settle first. Avant is 29.95% APR (nearly as bad as Perpay). Upstart APR still unknown — find your promissory note. SD6491589 lender unknown — identify before it auto-renews.</div>
     <div class="kg" id="debt-kpis"></div>
     <div class="card">
       <div class="ct" style="color:var(--red)">Debts</div>
@@ -423,8 +423,9 @@ tbody tr:last-child td { border-bottom: none; }
 </div>
 
 <script>
-// v4 = pre-loaded with Jeff's real data from documents (Apr 2026)
-const SK='eljefe-fin-v4';
+// v5 = updated Apr 23 2026 with confirmed: rent $875, insurance $130, Avant APR 29.95%,
+//      Hughes payoff $8,779, Cash App Borrow $800, Aidvantage $240/mo, 401k not enrolled
+const SK='eljefe-fin-v5';
 const $$=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n||0);
 const pc=(a,b)=>b>0?Math.min(100,Math.round(a/b*100)):0;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -443,10 +444,10 @@ const DEF={
     {id:4,  name:"Other income",                       budgeted:0,    received:0},
   ],
 
-  // Known fixed payments pre-filled; variable/unknown items at $0
+  // ── Budget: all confirmed values filled in ────────────────────────
   expenses:[
     // ── Housing ──────────────────────────────────────────────────────
-    {id:1,  name:"Rent  ← fill in",               cat:"Housing",   budgeted:0,   spent:0},
+    {id:1,  name:"Rent (starts May 1)",            cat:"Housing",   budgeted:875, spent:0},
     {id:2,  name:"Utilities / Internet",           cat:"Housing",   budgeted:0,   spent:0},
     // ── Food ─────────────────────────────────────────────────────────
     {id:3,  name:"Groceries",                      cat:"Food",      budgeted:0,   spent:0},
@@ -456,21 +457,22 @@ const DEF={
     {id:6,  name:"Subscriptions",                  cat:"Bills",     budgeted:0,   spent:0},
     // ── Transport ────────────────────────────────────────────────────
     {id:7,  name:"Gas",                            cat:"Transport", budgeted:0,   spent:0},
-    {id:8,  name:"Car insurance (Progressive) ← fill in", cat:"Transport", budgeted:0, spent:0},
+    {id:8,  name:"Car insurance (Progressive)",    cat:"Transport", budgeted:130, spent:0},
     // ── Business ─────────────────────────────────────────────────────
     {id:9,  name:"Business tools (AgentAce)",      cat:"Business",  budgeted:0,   spent:0},
     // ── Lifestyle ────────────────────────────────────────────────────
     {id:10, name:"Entertainment / misc",           cat:"Lifestyle", budgeted:0,   spent:0},
     // ── Savings ──────────────────────────────────────────────────────
     {id:11, name:"Emergency fund contribution",    cat:"Savings",   budgeted:0,   spent:0},
-    // ── Debt service (confirmed from statements) ──────────────────────
-    {id:12, name:"Hughes FCU auto loan",           cat:"Debt",      budgeted:251, spent:0},
+    // ── Debt service (all confirmed) ──────────────────────────────────
+    {id:12, name:"Hughes FCU auto loan",           cat:"Debt",      budgeted:242, spent:0},
     {id:13, name:"Perpay CC (payroll deduction)",  cat:"Debt",      budgeted:250, spent:0},
-    {id:14, name:"Avant personal loan",            cat:"Debt",      budgeted:129, spent:0},
+    {id:14, name:"Avant personal loan (29.95%)",   cat:"Debt",      budgeted:130, spent:0},
     {id:15, name:"Upstart loan",                   cat:"Debt",      budgeted:159, spent:0},
     {id:16, name:"SD6491589 (0% installment)",     cat:"Debt",      budgeted:160, spent:0},
     {id:17, name:"Capital One minimum",            cat:"Debt",      budgeted:25,  spent:0},
-    {id:18, name:"Student loans (Aidvantage) ← fill in", cat:"Debt", budgeted:0, spent:0},
+    {id:18, name:"Student loans (Aidvantage)",     cat:"Debt",      budgeted:240, spent:0},
+    {id:19, name:"Cash App Borrow (payment)",      cat:"Debt",      budgeted:0,   spent:0},
   ],
 
   // Assets: per docs (Apr 2026)
@@ -482,41 +484,44 @@ const DEF={
     {id:5, name:"2016 Jeep Renegade (KBB est.)",          amount:13000},
   ],
 
-  // Liabilities: per credit report + statements (Apr 2026)
+  // Liabilities: per credit report + statements + screenshots (Apr 2026)
   liabilities:[
     {id:1,  name:"DEPTEDNELNET (student loans)",          amount:46882},
     {id:2,  name:"Aidvantage Parent PLUS #1-01",          amount:16798},
     {id:3,  name:"Aidvantage Parent PLUS #1-02",          amount:16485},
-    {id:4,  name:"Hughes FCU auto (Jeep)",                amount:8986},
-    {id:5,  name:"Avant personal loan",                   amount:3277},
+    {id:4,  name:"Hughes FCU auto (Jeep) — payoff",       amount:8779},
+    {id:5,  name:"Avant personal loan (29.95% APR)",      amount:3277},
     {id:6,  name:"Upstart loan",                          amount:2399},
-    {id:7,  name:"SD6491589 (0% installment)",            amount:2240},
+    {id:7,  name:"SD6491589 (0% installment — unknown lender)", amount:2240},
     {id:8,  name:"Perpay CC (27.74% APR)",                amount:1646},
-    {id:9,  name:"Capital One CC",                        amount:263},
-    {id:10, name:"Portfolio Recovery (collection)",       amount:705},
-    {id:11, name:"AAS Debt Recovery (collection)",        amount:273},
+    {id:9,  name:"Cash App Borrow",                       amount:800},
+    {id:10, name:"Capital One CC",                        amount:263},
+    {id:11, name:"Portfolio Recovery (collection)",       amount:705},
+    {id:12, name:"AAS Debt Recovery (collection)",        amount:273},
   ],
 
-  // Debt tracker — pre-loaded with all confirmed accounts
-  // APRs marked 0 = unknown; update when you have them
+  // Debt tracker — all confirmed APRs as of Apr 2026
+  // Avant APR confirmed 29.95% per promissory note (WebBank)
+  // Upstart APR still unknown — update when found
   debts:[
     {id:1,  name:"DEPTEDNELNET (student)",        type:"Student loan", balance:46882, apr:0,     minPayment:0},
-    {id:2,  name:"Aidvantage #1-01 (Parent PLUS)",type:"Student loan", balance:16798, apr:6.84,  minPayment:0},
-    {id:3,  name:"Aidvantage #1-02 (Parent PLUS)",type:"Student loan", balance:16485, apr:6.84,  minPayment:0},
-    {id:4,  name:"Hughes FCU (Jeep — pays off May 2026)", type:"Auto loan", balance:8986, apr:5.95, minPayment:251},
-    {id:5,  name:"Avant personal loan",           type:"Personal",     balance:3277,  apr:0,     minPayment:129},
-    {id:6,  name:"Upstart loan",                  type:"Personal",     balance:2399,  apr:0,     minPayment:159},
+    {id:2,  name:"Aidvantage #1-01 (Parent PLUS)",type:"Student loan", balance:16798, apr:6.84,  minPayment:120},
+    {id:3,  name:"Aidvantage #1-02 (Parent PLUS)",type:"Student loan", balance:16485, apr:6.84,  minPayment:120},
+    {id:4,  name:"Hughes FCU (Jeep — due 05/05)", type:"Auto loan",    balance:8779,  apr:5.95,  minPayment:242},
+    {id:5,  name:"Avant (WebBank) — 29.95% APR",  type:"Personal",     balance:3277,  apr:29.95, minPayment:130},
+    {id:6,  name:"Upstart loan — APR unknown",    type:"Personal",     balance:2399,  apr:0,     minPayment:159},
     {id:7,  name:"SD6491589 (0% installment)",    type:"Personal",     balance:2240,  apr:0,     minPayment:160},
-    {id:8,  name:"Perpay CC",                     type:"Credit card",  balance:1646,  apr:27.74, minPayment:66},
-    {id:9,  name:"Capital One CC",                type:"Credit card",  balance:263,   apr:0,     minPayment:25},
-    {id:10, name:"Portfolio Recovery (collection — SETTLE NOW)", type:"Other", balance:705, apr:0, minPayment:0},
-    {id:11, name:"AAS Debt Recovery (collection — SETTLE NOW)",  type:"Other", balance:273, apr:0, minPayment:0},
+    {id:8,  name:"Perpay CC — 27.74% APR",        type:"Credit card",  balance:1646,  apr:27.74, minPayment:66},
+    {id:9,  name:"Cash App Borrow",               type:"Personal",     balance:800,   apr:0,     minPayment:0},
+    {id:10, name:"Capital One CC — APR unknown",  type:"Credit card",  balance:263,   apr:0,     minPayment:25},
+    {id:11, name:"Portfolio Recovery (SETTLE NOW)",type:"Other",        balance:705,   apr:0,     minPayment:0},
+    {id:12, name:"AAS Debt Recovery (SETTLE NOW)", type:"Other",        balance:273,   apr:0,     minPayment:0},
   ],
 
   cashApp:{
     cashBalance:0,
     btc:{amount:0,priceUsd:0},
-    borrow:{balance:0,originalAmount:0,apr:0,minPayment:0,dueDate:''},
+    borrow:{balance:800,originalAmount:0,apr:0,minPayment:0,dueDate:''},
     stocks:[],
     activity:[],
   },
@@ -531,7 +536,7 @@ const DEF={
   ],
 
   // Move-in: May 1 target — fill in actuals
-  moveIn:{securityDeposit:0,firstMonthRent:0,lastMonthRent:0,movingCosts:0,furniture:0,kitchenSetup:0,misc:0,saved:0},
+  moveIn:{securityDeposit:875,firstMonthRent:875,lastMonthRent:0,movingCosts:0,furniture:0,kitchenSetup:0,misc:0,saved:0},
 
   expenseLog:[],
   expenseLibrary:[
