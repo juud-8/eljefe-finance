@@ -1,0 +1,15 @@
+{
+  "name": "El Jefé Finance",
+  "short_name": "El Jefé",
+  "description": "Personal finance dashboard — budget, debt, net worth, move-in runway.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#d4a843",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}

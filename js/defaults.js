@@ -1,0 +1,111 @@
+// Real-world defaults as of April 2026. Seeds a fresh store when no saved
+// state exists (and provides the schema shape that migrate() targets).
+//
+// Income: bi-weekly net $1,998.75 × 26 ÷ 12 ≈ $4,331/mo
+// Split: PNC $1,598.75 · Cash App $300 · Perpay $125 (payroll deduction)
+// Sources: pay stub 03/05/2026 (Millcraft Investments / Piatt Sotheby's)
+export const DEF = {
+  income: [
+    { id: 1, name: "Sotheby's salary (monthly net)", budgeted: 4331, received: 0 },
+    { id: 2, name: 'AgentAce / consulting',           budgeted: 0,    received: 0 },
+    { id: 3, name: 'AI LooksMaxx Pro (app)',          budgeted: 0,    received: 0 },
+    { id: 4, name: 'Other income',                    budgeted: 0,    received: 0 },
+  ],
+  expenses: [
+    { id: 1,  name: 'Rent (starts May 1)',            cat: 'Housing',   budgeted: 875, spent: 0 },
+    { id: 2,  name: 'Utilities / Internet',           cat: 'Housing',   budgeted: 0,   spent: 0 },
+    { id: 3,  name: 'Groceries',                      cat: 'Food',      budgeted: 0,   spent: 0 },
+    { id: 4,  name: 'Dining out',                     cat: 'Food',      budgeted: 0,   spent: 0 },
+    { id: 5,  name: 'Phone',                          cat: 'Bills',     budgeted: 0,   spent: 0 },
+    { id: 6,  name: 'Subscriptions',                  cat: 'Bills',     budgeted: 0,   spent: 0 },
+    { id: 7,  name: 'Gas',                            cat: 'Transport', budgeted: 0,   spent: 0 },
+    { id: 8,  name: 'Car insurance (Progressive)',    cat: 'Transport', budgeted: 130, spent: 0 },
+    { id: 9,  name: 'Business tools (AgentAce)',      cat: 'Business',  budgeted: 0,   spent: 0 },
+    { id: 10, name: 'Entertainment / misc',           cat: 'Lifestyle', budgeted: 0,   spent: 0 },
+    { id: 11, name: 'Emergency fund contribution',    cat: 'Savings',   budgeted: 0,   spent: 0 },
+    { id: 12, name: 'Hughes FCU auto loan',           cat: 'Debt',      budgeted: 242, spent: 0 },
+    { id: 13, name: 'Perpay CC (payroll deduction)',  cat: 'Debt',      budgeted: 250, spent: 0 },
+    { id: 14, name: 'Avant personal loan (29.95%)',   cat: 'Debt',      budgeted: 130, spent: 0 },
+    { id: 15, name: 'Upstart loan',                   cat: 'Debt',      budgeted: 159, spent: 0 },
+    { id: 16, name: 'SD6491589 (0% installment)',     cat: 'Debt',      budgeted: 160, spent: 0 },
+    { id: 17, name: 'Capital One minimum',            cat: 'Debt',      budgeted: 25,  spent: 0 },
+    { id: 18, name: 'Student loans (Aidvantage)',     cat: 'Debt',      budgeted: 240, spent: 0 },
+    { id: 19, name: 'Cash App Borrow (payment)',      cat: 'Debt',      budgeted: 0,   spent: 0 },
+  ],
+  assets: [
+    { id: 1, name: 'PNC Checking (x1167)',           amount: 927,  lastUpdated: '2026-02-10' },
+    { id: 2, name: 'Cash App balance',               amount: 0,    lastUpdated: '' },
+    { id: 3, name: 'Fidelity Individual (6 shares BK)', amount: 876, lastUpdated: '' },
+    { id: 4, name: 'Fidelity Rollover IRA',          amount: 61,   lastUpdated: '' },
+    { id: 5, name: '2016 Jeep Renegade (KBB est.)',  amount: 13000, lastUpdated: '' },
+  ],
+  liabilities: [
+    { id: 1,  name: 'DEPTEDNELNET (student loans)',              amount: 46882, lastUpdated: '' },
+    { id: 2,  name: 'Aidvantage Parent PLUS #1-01',              amount: 16798, lastUpdated: '' },
+    { id: 3,  name: 'Aidvantage Parent PLUS #1-02',              amount: 16485, lastUpdated: '' },
+    { id: 4,  name: 'Hughes FCU auto (Jeep) — payoff',           amount: 8779,  lastUpdated: '' },
+    { id: 5,  name: 'Avant personal loan (29.95% APR)',          amount: 3277,  lastUpdated: '' },
+    { id: 6,  name: 'Upstart loan',                              amount: 2399,  lastUpdated: '' },
+    { id: 7,  name: 'SD6491589 (0% installment — unknown lender)', amount: 2240, lastUpdated: '' },
+    { id: 8,  name: 'Perpay CC (27.74% APR)',                    amount: 1646,  lastUpdated: '' },
+    { id: 9,  name: 'Cash App Borrow',                           amount: 800,   lastUpdated: '' },
+    { id: 10, name: 'Capital One CC',                            amount: 263,   lastUpdated: '' },
+    { id: 11, name: 'Portfolio Recovery (collection)',           amount: 705,   lastUpdated: '' },
+    { id: 12, name: 'AAS Debt Recovery (collection)',            amount: 273,   lastUpdated: '' },
+  ],
+  debts: [
+    { id: 1,  name: 'DEPTEDNELNET (student)',         type: 'Student loan', balance: 46882, apr: 0,     minPayment: 0,   dueDate: '' },
+    { id: 2,  name: 'Aidvantage #1-01 (Parent PLUS)', type: 'Student loan', balance: 16798, apr: 6.84,  minPayment: 120, dueDate: '' },
+    { id: 3,  name: 'Aidvantage #1-02 (Parent PLUS)', type: 'Student loan', balance: 16485, apr: 6.84,  minPayment: 120, dueDate: '' },
+    { id: 4,  name: 'Hughes FCU (Jeep — due 05/05)',  type: 'Auto loan',    balance: 8779,  apr: 5.95,  minPayment: 242, dueDate: '2026-05-05' },
+    { id: 5,  name: 'Avant (WebBank) — 29.95% APR',   type: 'Personal',     balance: 3277,  apr: 29.95, minPayment: 130, dueDate: '' },
+    { id: 6,  name: 'Upstart loan — APR unknown',     type: 'Personal',     balance: 2399,  apr: 0,     minPayment: 159, dueDate: '' },
+    { id: 7,  name: 'SD6491589 (0% installment)',     type: 'Personal',     balance: 2240,  apr: 0,     minPayment: 160, dueDate: '' },
+    { id: 8,  name: 'Perpay CC — 27.74% APR',         type: 'Credit card',  balance: 1646,  apr: 27.74, minPayment: 66,  dueDate: '' },
+    { id: 9,  name: 'Cash App Borrow',                type: 'Personal',     balance: 800,   apr: 0,     minPayment: 0,   dueDate: '' },
+    { id: 10, name: 'Capital One CC — APR unknown',   type: 'Credit card',  balance: 263,   apr: 0,     minPayment: 25,  dueDate: '' },
+    { id: 11, name: 'Portfolio Recovery (SETTLE NOW)', type: 'Other',       balance: 705,   apr: 0,     minPayment: 0,   dueDate: '' },
+    { id: 12, name: 'AAS Debt Recovery (SETTLE NOW)',  type: 'Other',       balance: 273,   apr: 0,     minPayment: 0,   dueDate: '' },
+  ],
+  cashApp: {
+    cashBalance: 0,
+    btc: { amount: 0, priceUsd: 0 },
+    // Cash App Borrow is a flat-fee loan (not APR). Default kind='flat'
+    // with feePct being the total fee over the term.
+    borrow: { balance: 800, originalAmount: 0, apr: 0, feePct: 5, kind: 'flat', minPayment: 0, dueDate: '' },
+    stocks: [],
+    activity: [],
+  },
+  goals: [
+    { id: 1, name: 'AgentAce MRR ($10K × 2 mo. = leave job)', target: 10000, current: 0 },
+    { id: 2, name: 'Settle collections (Portfolio Recovery + AAS)', target: 978, current: 0 },
+    { id: 3, name: 'Pay off Perpay CC',                      target: 1646, current: 0 },
+    { id: 4, name: 'Emergency fund (3 months expenses)',     target: 9000, current: 0 },
+    { id: 5, name: 'Move-in fund',                           target: 0,    current: 0 },
+  ],
+  moveIn: {
+    securityDeposit: 875,
+    firstMonthRent: 875,
+    lastMonthRent: 0,
+    movingCosts: 0,
+    furniture: 0,
+    kitchenSetup: 0,
+    misc: 0,
+    saved: 0,
+  },
+  expenseLog: [],
+  expenseLibrary: [
+    { id: 9001, name: 'Coffee / cafe',     cat: 'Food',      amount: 0 },
+    { id: 9002, name: 'Uber / Lyft',       cat: 'Transport', amount: 0 },
+    { id: 9003, name: 'Groceries',         cat: 'Food',      amount: 0 },
+    { id: 9004, name: 'Dining out',        cat: 'Food',      amount: 0 },
+    { id: 9005, name: 'Subscription',      cat: 'Bills',     amount: 0 },
+    { id: 9006, name: 'Gas station',       cat: 'Transport', amount: 0 },
+    { id: 9007, name: 'Coinbase purchase', cat: 'Business',  amount: 0 },
+  ],
+  // monthlySpent[yyyy-mm] = { total, byCategory: {...} } captured at rollover.
+  history: { monthlySpent: {} },
+  ui: { theme: 'auto', expenseFilter: { cat: '', from: '', to: '', min: '' } },
+  // Track the last month we ran the budget rollover so we only do it once.
+  meta: { lastRolloverMonth: '' },
+};
